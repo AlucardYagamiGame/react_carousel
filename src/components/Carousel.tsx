@@ -45,8 +45,14 @@ const Carousel: React.FC<Props> = ({
     }
 
     if (infinite) {
-      setIsAnimating(true);
-      setCurrentIndex(prev => prev + step);
+      setIsAnimating(animationDuration > 0);
+
+      const nextIndex = Math.min(
+        currentIndex + step,
+        imagesCount * 2 - frameSize,
+      );
+
+      setCurrentIndex(animationDuration > 0 ? nextIndex : normalize(nextIndex));
     } else {
       setCurrentIndex(prev => Math.min(prev + step, maxIndex));
     }
@@ -58,8 +64,11 @@ const Carousel: React.FC<Props> = ({
     }
 
     if (infinite) {
-      setIsAnimating(true);
-      setCurrentIndex(prev => prev - step);
+      setIsAnimating(animationDuration > 0);
+
+      const prevIndex = Math.max(currentIndex - step, -imagesCount);
+
+      setCurrentIndex(animationDuration > 0 ? prevIndex : normalize(prevIndex));
     } else {
       setCurrentIndex(prev => Math.max(prev - step, 0));
     }
