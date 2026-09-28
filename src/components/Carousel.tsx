@@ -16,63 +16,98 @@ const Carousel: React.FC<Props> = ({
   frameSize = 3,
   itemWidth = 130,
   animationDuration,
-  //infinite = false,
+  infinite = false,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [withAnimation, setWithAnimation] = useState(true);
+
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const imagesCount = images.length;
+  const maxIndex = imagesCount - frameSize;
+
+  const normalize = (index: number) =>
+    ((index % imagesCount) + imagesCount) % imagesCount;
 
   useEffect(() => {
-    const maxIndex = images.length - frameSize;
-
-    if (currentIndex > maxIndex) {
-      setCurrentIndex(Math.max(0, maxIndex));
+    if (infinite) {
+      return;
     }
-  }, [frameSize, images.length, currentIndex]);
+
+    setCurrentIndex(prev =>
+      Math.min(prev, Math.max(0, imagesCount - frameSize)),
+    );
+  }, [frameSize, imagesCount, infinite]);
 
   const handleNext = () => {
-    const maxIndex = images.length - frameSize;
+    if (animationDuration > 0 && isAnimating) {
+      return;
+    }
 
-    setCurrentIndex(prevIndex => {
-      const nextIndex = prevIndex + Math.max(1, step);
-
-      return nextIndex > maxIndex ? maxIndex : nextIndex;
-    });
+    if (infinite) {
+      setIsAnimating(true);
+      setCurrentIndex(prev => prev + step);
+    } else {
+      setCurrentIndex(prev => Math.min(prev + step, maxIndex));
+    }
   };
 
   const handlePrev = () => {
-    setCurrentIndex(prevIndex => {
-      const nextIndex = prevIndex - Math.max(1, step);
+    if (animationDuration > 0 && isAnimating) {
+      return;
+    }
 
-      return nextIndex < 0 ? 0 : nextIndex;
-    });
+    if (infinite) {
+      setIsAnimating(true);
+      setCurrentIndex(prev => prev - step);
+    } else {
+      setCurrentIndex(prev => Math.max(prev - step, 0));
+    }
   };
 
-  const maxIndex = images.length - frameSize;
-  const isPrevDisabled = currentIndex === 0;
-  const isNextDisabled = currentIndex >= maxIndex;
+  const handleTransitionEnd = () => {
+    setIsAnimating(false);
 
-  // Передаємо динамічні параметри як CSS-змінні
+    if (!infinite) {
+      return;
+    }
+
+    const normalized = normalize(currentIndex);
+
+    if (normalized !== currentIndex) {
+      setWithAnimation(false);
+      setCurrentIndex(normalized);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setWithAnimation(true));
+      });
+    }
+  };
+
+  const isPrevDisabled = !infinite && currentIndex === 0;
+  const isNextDisabled = !infinite && currentIndex >= maxIndex;
+
   const dynamicStyles = {
     '--item-width': `${itemWidth}px`,
     '--frame-size': frameSize,
-    '--current-index': currentIndex,
-    '--animation-duration': `${animationDuration}ms`,
+    '--offset': infinite ? currentIndex + imagesCount : currentIndex,
+    '--animation-duration': withAnimation ? `${animationDuration}ms` : '0ms',
   } as React.CSSProperties;
+
+  const listImages = infinite ? [...images, ...images, ...images] : images;
 
   return (
     <div className="Carousel" style={dynamicStyles}>
-      <ul className="Carousel__list">
-        {images.map((image, index) => {
-          return (
-            <li key={index} className="Carousel__item">
-              <img
-                src={image}
-                alt={image}
-                className="Carousel__image"
-                width={itemWidth}
-              />
-            </li>
-          );
-        })}
+      <ul className="Carousel__list" onTransitionEnd={handleTransitionEnd}>
+        {listImages.map((image, index) => (
+          <li key={index} className="Carousel__item">
+            <img
+              src={image}
+              alt={image}
+              className="Carousel__image"
+              width={itemWidth}
+            />
+          </li>
+        ))}
       </ul>
 
       <div className="Carousel__buttons">

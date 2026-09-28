@@ -9,7 +9,7 @@
     padding: 0;
     list-style: none;
 
-    transform: translateX(calc(var(--current-index) * var(--item-width) * -1));
+    transform: translateX(calc(var(--offset) * var(--item-width) * -1));
     transition: transform var(--animation-duration) ease;
   }
 

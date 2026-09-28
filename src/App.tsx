@@ -8,10 +8,17 @@ type State = {
   frameSize: number;
   step: number;
   animationDuration: number;
+  infinite: boolean;
 };
 
+type CarouselSettings =
+  | 'frameSize'
+  | 'step'
+  | 'itemWidth'
+  | 'animationDuration';
+
 const LIMITS: Record<string, { min: number; max: number }> = {
-  itemWidth: { min: 10, max: 1000 },
+  itemWidth: { min: 10, max: 400 },
   frameSize: { min: 1, max: 10 },
   step: { min: 1, max: 10 },
   animationDuration: { min: 0, max: 10000 },
@@ -35,22 +42,38 @@ class App extends React.Component<{}, State> {
     frameSize: 3,
     step: 3,
     animationDuration: 1000,
+    infinite: false,
   };
 
   handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = event.target;
+    const name = event.target.name as CarouselSettings;
+    const value =
+      event.target.type === 'checkbox'
+        ? event.target.checked
+        : Number(event.target.value);
 
-    // prettier-ignore
-    this.setState({
-      [name]: Number(value),
-    } as unknown as Pick<
-    State,
-    'itemWidth' | 'frameSize' | 'step' | 'animationDuration'
-    >);
+    this.setState(prevState => ({
+      ...prevState,
+      [name]: value,
+    }));
+  };
+
+  handleInputBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    const name = event.target.name as CarouselSettings;
+    const { min, max } = LIMITS[name];
+    const rawValue = Number(event.target.value);
+    const clampedValue = Number.isNaN(rawValue)
+      ? min
+      : Math.min(max, Math.max(min, rawValue));
+
+    this.setState(prevState => ({
+      ...prevState,
+      [name]: clampedValue,
+    }));
   };
 
   render() {
-    const { images, itemWidth, frameSize, step, animationDuration } =
+    const { images, frameSize, step, itemWidth, animationDuration, infinite } =
       this.state;
 
     return (
@@ -69,6 +92,7 @@ class App extends React.Component<{}, State> {
               value={itemWidth}
               min={LIMITS.itemWidth.min}
               max={LIMITS.itemWidth.max}
+              onBlur={this.handleInputBlur}
               onChange={this.handleInputChange}
               className="App__input"
             />
@@ -82,6 +106,7 @@ class App extends React.Component<{}, State> {
               value={frameSize}
               min={LIMITS.frameSize.min}
               max={LIMITS.frameSize.max}
+              onBlur={this.handleInputBlur}
               onChange={this.handleInputChange}
               className="App__input"
             />
@@ -95,6 +120,7 @@ class App extends React.Component<{}, State> {
               value={step}
               min={LIMITS.step.min}
               max={LIMITS.step.max}
+              onBlur={this.handleInputBlur}
               onChange={this.handleInputChange}
               className="App__input"
             />
@@ -108,8 +134,21 @@ class App extends React.Component<{}, State> {
               value={animationDuration}
               min={LIMITS.animationDuration.min}
               max={LIMITS.animationDuration.max}
+              onBlur={this.handleInputBlur}
               onChange={this.handleInputChange}
               className="App__input"
+            />
+          </label>
+          <label className="App__label" htmlFor="infinityId">
+            Infinity:
+            <input
+              id="infinityId"
+              type="checkbox"
+              name="infinite"
+              value={infinite ? '1' : '0'}
+              checked={!!infinite}
+              onChange={this.handleInputChange}
+              className="App__checkbox"
             />
           </label>
         </div>
@@ -121,7 +160,7 @@ class App extends React.Component<{}, State> {
             frameSize={frameSize}
             itemWidth={itemWidth}
             animationDuration={animationDuration}
-            infinite={false}
+            infinite={infinite}
           />
         </div>
       </div>
